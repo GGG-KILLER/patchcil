@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PatchCil", "src\PatchCil.csproj", "{613F0F7B-F339-4ABC-B41E-62B33B5F7ACF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PatchCil.Test", "test\PatchCil.Test.csproj", "{B266A90A-EDAC-4430-BFCF-F3FC301D2C06}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{613F0F7B-F339-4ABC-B41E-62B33B5F7ACF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{613F0F7B-F339-4ABC-B41E-62B33B5F7ACF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{613F0F7B-F339-4ABC-B41E-62B33B5F7ACF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{613F0F7B-F339-4ABC-B41E-62B33B5F7ACF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B266A90A-EDAC-4430-BFCF-F3FC301D2C06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B266A90A-EDAC-4430-BFCF-F3FC301D2C06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B266A90A-EDAC-4430-BFCF-F3FC301D2C06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B266A90A-EDAC-4430-BFCF-F3FC301D2C06}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
