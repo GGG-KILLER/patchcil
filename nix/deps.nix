@@ -24,6 +24,11 @@
     hash = "sha256-hPuFrpcm2VMiYEirsL4kYmAhOzjwjNXUklIfYJEonLo=";
   })
   (fetchNuGet {
+    pname = "DotNet.Glob";
+    version = "3.1.3";
+    hash = "sha256-5uGSaGY1IqDjq4RCDLPJm0Lg9oyWmyR96OiNeGqSj84=";
+  })
+  (fetchNuGet {
     pname = "System.CommandLine";
     version = "2.0.0-beta4.22272.1";
     hash = "sha256-zSO+CYnMH8deBHDI9DHhCPj79Ce3GOzHCyH1/TiHxcc=";

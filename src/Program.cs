@@ -5,6 +5,7 @@ using PatchCil.Commands;
 var rootCommand = new RootCommand("A tool for modifying CIL assemblies.")
 {
     new MainCommand().Command,
+    new AutoCommand().Command,
 };
 
 return await rootCommand.InvokeAsync(args, new SystemConsole());
