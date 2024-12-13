@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PatchCil", "src\PatchCil.cs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PatchCil.Test", "test\PatchCil.Test.csproj", "{B266A90A-EDAC-4430-BFCF-F3FC301D2C06}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{2C3EC1FA-9C10-478C-AA29-EAD60186CAC6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "rid-graph-gen", "tools\rid-graph-gen\rid-graph-gen.csproj", "{B9EE98CB-07DC-407D-88CA-046C81E46F41}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +28,12 @@ Global
 		{B266A90A-EDAC-4430-BFCF-F3FC301D2C06}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B266A90A-EDAC-4430-BFCF-F3FC301D2C06}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B266A90A-EDAC-4430-BFCF-F3FC301D2C06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9EE98CB-07DC-407D-88CA-046C81E46F41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9EE98CB-07DC-407D-88CA-046C81E46F41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9EE98CB-07DC-407D-88CA-046C81E46F41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9EE98CB-07DC-407D-88CA-046C81E46F41}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B9EE98CB-07DC-407D-88CA-046C81E46F41} = {2C3EC1FA-9C10-478C-AA29-EAD60186CAC6}
 	EndGlobalSection
 EndGlobal
