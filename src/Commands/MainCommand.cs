@@ -8,6 +8,7 @@ using AsmResolver.DotNet.Serialized;
 using AsmResolver.IO;
 using AsmResolver.PE;
 using AsmResolver.PE.File;
+using PatchCil.Helpers;
 
 namespace PatchCil.Commands;
 

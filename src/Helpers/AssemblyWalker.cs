@@ -1,7 +1,7 @@
 using AsmResolver.DotNet;
 using PatchCil.Model;
 
-namespace PatchCil;
+namespace PatchCil.Helpers;
 
 internal static class AssemblyWalker
 {
