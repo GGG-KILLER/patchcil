@@ -150,7 +150,17 @@ internal sealed class AutoCommand
         {
             if (allowedMissing.Any(pattern => pattern.IsMatch(missing.LibraryName)))
             {
-                context.Console.WriteLine($"warn: patchcil-auto ignoring missing {missing.LibraryName} wanted by {missing.Assembly}");
+                context.Console.WriteLine($"warn: patchcil-auto ignoring missing {missing.LibraryName} wanted by {missing.Assembly} (allowed by user to be missing)");
+            }
+            // If the library has an extension and it is not the extension for libraries for a given RID,
+            // then we can ignore them since we won't be using .dll's nor .dylib's on Unix or vice-versa.
+            else if (RuntimeIdentifiers.IsUnix(rid) && !RuntimeIdentifiers.IsApple(rid)
+                // Non-Apple Unix libraries usually are suffixed with the major version number of the library, so
+                // we acccount for that with the .Contains(".so."). (e.g.: libgobject-2.0.so.0)
+                ? !(missing.LibraryName.EndsWith(".so") || missing.LibraryName.Contains(".so."))
+                : Path.GetExtension(missing.LibraryName) is { Length: > 0 } ext && ext != RuntimeIdentifiers.GetLibraryExtension(rid))
+            {
+                context.Console.WriteLine($"warn: patchcil-auto ignoring missing {missing.LibraryName} wanted by {missing.Assembly} (extension for different RID?)");
             }
             else
             {
