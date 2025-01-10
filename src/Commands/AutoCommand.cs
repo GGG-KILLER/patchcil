@@ -145,6 +145,7 @@ internal sealed class AutoCommand
         var missingDependencies = dependencies.Where(x => !x.Satisfied).ToImmutableArray();
 
         var failed = false;
+        var actuallyMissing = new HashSet<string>(StringComparer.Ordinal);
         context.Console.WriteLine($"patchcil-auto: {missingDependencies.Length} dependencies could not be satisfied");
         foreach (var missing in missingDependencies)
         {
@@ -166,13 +167,15 @@ internal sealed class AutoCommand
             {
                 context.Console.WriteLine($"error: patchcil-auto could not satisfy dependency {missing.LibraryName} wanted by {missing.Assembly}");
                 failed = true;
+                actuallyMissing.Add(Path.GetFileName(missing.LibraryName));
             }
         }
 
         if (failed)
         {
             context.Console.Error.WriteLine("patchcil-auto failed to find all the required dependencies.");
-            context.Console.Error.WriteLine("Add the missing dependencies to --libs or use `--ignore-missing=foo.so.1 bar.so etc.so`.");
+            context.Console.Error.WriteLine("Add the missing dependencies to --libs or use `--ignore-missing foo.so.1 bar.so etc.so`.");
+            context.Console.Error.WriteLine($"error: missing libraries: {string.Join(", ", actuallyMissing)}");
             context.ExitCode = ExitCodes.MissingDependencies;
         }
     }
