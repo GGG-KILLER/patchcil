@@ -184,15 +184,15 @@ internal sealed class AutoCommand
             // Memory map as we don't know how large the assemblies we'll be opening are.
             using var fileService = new MemoryMappedFileService();
 
-            var runtimeFolderName = RuntimeIdentifiers.EnumerateSelfAndDescendants(rid)
-                .Select(rid => Path.Combine(assembly.Directory!.Name, "runtime", "rid"))
-                .FirstOrDefault(Directory.Exists);
+            // TODO: Read information from .deps.json instead of using this hacky method.
+            var runtimeFolders = RuntimeIdentifiers.EnumerateSelfAndDescendants(rid)
+                .Select(rid => Path.Combine(assembly.Directory!.Name, "runtimes", rid, "native"))
+                .Where(Directory.Exists)
+                .Select(path => new DirectoryInfo(path));
 
             // List all assembly-specific
             var assemblyCandidateMap = new CandidateMap(false, assembly.Directory!);
-            var runtimeCandidateMap = runtimeFolderName != null
-                ? new CandidateMap(true, new DirectoryInfo(runtimeFolderName))
-                : null;
+            var runtimeCandidateMap = new CandidateMap(false, runtimeFolders);
 
             var assemblyDefinition = AssemblyDefinition.FromFile(
                 fileService.OpenFile(assembly.FullName),
@@ -217,7 +217,7 @@ internal sealed class AutoCommand
                     console.WriteLine($"    {import.Library} -> found: {Path.GetRelativePath(assembly.Directory.FullName, candidate)}");
                     dependencies.Add(new Dependency(assembly, import.Library, true));
                 }
-                else if (runtimeCandidateMap?.TryFind(rid, import.Library, out candidate) is true)
+                else if (runtimeCandidateMap.TryFind(rid, import.Library, out candidate))
                 {
                     console.WriteLine($"    {import.Library} -> found: {Path.GetRelativePath(assembly.Directory.FullName, candidate)}");
                     dependencies.Add(new Dependency(assembly, import.Library, true));
