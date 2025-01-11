@@ -5,14 +5,9 @@
 
   outputs =
     { self, nixpkgs }:
-
     let
-      supportedSystems = [
-        "x86_64-linux"
-        "i686-linux"
-        "aarch64-linux"
-        "riscv64-linux"
-      ];
+      supportedSystems =
+        nixpkgs.legacyPackages.x86_64-linux.dotnetCorePackages.runtime_9_0.meta.platforms;
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
       version = nixpkgs.lib.removeSuffix "\n" (builtins.readFile ./version);
@@ -24,15 +19,10 @@
           src = self;
         };
     in
-
     {
       overlays.default = final: prev: {
         patchcil-new = patchcilFor final;
       };
-
-      checks = forAllSystems (system: {
-        build = self.hydraJobs.build.${system};
-      });
 
       devShells = forAllSystems (system: {
         default = self.packages.${system}.patchcil;
@@ -48,7 +38,5 @@
           default = self.packages.${system}.patchcil;
         }
       );
-
     };
-
 }
