@@ -94,7 +94,7 @@ internal sealed class AutoCommand
         if (!RuntimeIdentifiers.IsValid(rid))
         {
             context.Console.WriteError("invalid RID (Runtime Identifier) provided.");
-            context.ExitCode = 1;
+            context.ExitCode = ExitCodes.InvalidRid;
             return;
         }
 
@@ -177,7 +177,10 @@ internal sealed class AutoCommand
             context.Console.Error.WriteLine("Add the missing dependencies to --libs or use `--ignore-missing foo.so.1 bar.so etc.so`.");
             context.Console.Error.WriteLine($"error: missing libraries: {string.Join(", ", actuallyMissing)}");
             context.ExitCode = ExitCodes.MissingDependencies;
+            return;
         }
+
+        context.ExitCode = ExitCodes.Ok;
     }
 
     public static ImmutableArray<Dependency> AutoPatchAssemblies(

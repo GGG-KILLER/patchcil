@@ -180,6 +180,6 @@ internal sealed class MainCommand
             assemblyDefinition.Write(output.FullName);
         }
 
-        context.ExitCode = 0;
+        context.ExitCode = ExitCodes.Ok;
     }
 }
