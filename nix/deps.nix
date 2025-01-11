@@ -29,21 +29,6 @@
     hash = "sha256-5uGSaGY1IqDjq4RCDLPJm0Lg9oyWmyR96OiNeGqSj84=";
   })
   (fetchNuGet {
-    pname = "runtime.linux-arm64.Microsoft.DotNet.ILCompiler";
-    version = "9.0.0";
-    hash = "sha256-6K4hYOQ9jasxZvHu4gy4mGRiDE4mKSeSkxQVvFHuC5A=";
-  })
-  (fetchNuGet {
-    pname = "runtime.osx-arm64.Microsoft.DotNet.ILCompiler";
-    version = "9.0.0";
-    hash = "sha256-WLJA9CoDVdUpP9Pgv6Tg1xi7YHjneY8gPdOLiEHF/r8=";
-  })
-  (fetchNuGet {
-    pname = "runtime.osx-x64.Microsoft.DotNet.ILCompiler";
-    version = "9.0.0";
-    hash = "sha256-dkEUTvOMkz3kBPYhFLot1Vv9rOoajkusCTjuX/MMXrs=";
-  })
-  (fetchNuGet {
     pname = "System.CommandLine";
     version = "2.0.0-beta4.22272.1";
     hash = "sha256-zSO+CYnMH8deBHDI9DHhCPj79Ce3GOzHCyH1/TiHxcc=";
