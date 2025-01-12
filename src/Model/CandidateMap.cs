@@ -27,57 +27,9 @@ internal sealed class CandidateMap(bool recurse)
 
         foreach (var candidateLocation in _candidateLocations)
         {
-            // We only test for alternatives if the library name is not relative or absolute.
-            // And unix-like systems prefer the version with the extension, even if one without exists.
-            if (isUnix)
+            foreach (var variation in NativeLibrary.ListVariations(rid, name))
             {
-                if (isApple)
-                {
-                    if (!name.EndsWith(".dylib") && tryFindInCandidate(candidateLocation, name + ".dylib", out candidate, recurse))
-                        return true;
-                }
-                else
-                {
-                    if (!name.EndsWith(".so") && tryFindInCandidate(candidateLocation, name + ".so", out candidate, recurse))
-                        return true;
-                }
-            }
-
-            if (tryFindInCandidate(candidateLocation, name, out candidate, recurse))
-                return true;
-
-            if (isWindows)
-            {
-                // Add .dll suffix if there is no executable-like suffix already.
-                if (!(name.EndsWith(".dll") || name.EndsWith(".exe")) && tryFindInCandidate(candidateLocation, name + ".dll", out candidate, recurse))
-                    return true;
-            }
-            else if (isApple)
-            {
-                // Try adding lib prefix
-                if (!name.StartsWith("lib") && tryFindInCandidate(candidateLocation, "lib" + name, out candidate, recurse))
-                    return true;
-
-                // Unix-based systems always add the extension.
-                if (tryFindInCandidate(candidateLocation, name + ".dylib", out candidate, recurse))
-                    return true;
-
-                // Unix-based systems always add the extension.
-                if (!name.StartsWith("lib") && tryFindInCandidate(candidateLocation, "lib" + name + ".dylib", out candidate, recurse))
-                    return true;
-            }
-            else if (isUnix)
-            {
-                // Try adding lib prefix
-                if (tryFindInCandidate(candidateLocation, "lib" + name, out candidate, recurse))
-                    return true;
-
-                // Unix-based systems always add the extension.
-                if (tryFindInCandidate(candidateLocation, name + ".so", out candidate, recurse))
-                    return true;
-
-                // Unix-based systems always add the extension.
-                if (!name.StartsWith("lib") && tryFindInCandidate(candidateLocation, "lib" + name + ".so", out candidate, recurse))
+                if (tryFindInCandidate(candidateLocation, variation, out candidate, recurse))
                     return true;
             }
         }
