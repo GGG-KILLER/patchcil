@@ -5,8 +5,8 @@ using System.CommandLine.IO;
 using AsmResolver;
 using AsmResolver.DotNet;
 using AsmResolver.DotNet.Serialized;
-using AsmResolver.IO;
 using AsmResolver.PE;
+using DotNet.Globbing;
 using PatchCil.Helpers;
 using PatchCil.Model;
 
@@ -17,6 +17,7 @@ internal sealed class AutoCommand
     private readonly Option<string> _ridOption;
     private readonly Option<bool> _noRecurseOption;
     private readonly Option<IEnumerable<FileSystemInfo>> _libraryPathsOption;
+    private readonly Option<IEnumerable<string>> _skipRewrite;
     private readonly Option<IEnumerable<string>> _ignoreMissingOption;
     private readonly Option<bool> _dryRunOption;
     private readonly Option<IEnumerable<FileSystemInfo>> _pathsOption;
@@ -56,6 +57,14 @@ internal sealed class AutoCommand
             AllowMultipleArgumentsPerToken = true,
         };
 
+        _skipRewrite = new Option<IEnumerable<string>>(
+            name: "--skip-rewrite",
+            description: "Skip rewriting libraries that match the provided globs.")
+        {
+            Arity = ArgumentArity.ZeroOrMore,
+            AllowMultipleArgumentsPerToken = true,
+        };
+
         _ignoreMissingOption = new Option<IEnumerable<string>>(
             name: "--ignore-missing",
             description: "Do not fail when some dependencies are not found.")
@@ -88,10 +97,17 @@ internal sealed class AutoCommand
         var libraryPaths = context.ParseResult.GetValueForOption(_libraryPathsOption)!
                                               .Where(item => item.Exists)
                                               .ToImmutableArray();
+        var skipRewrite = context.ParseResult.GetValueForOption(_skipRewrite)
+                                                ?.Where(val => !string.IsNullOrWhiteSpace(val))
+                                                .Distinct()
+                                                .Select(Glob.Parse)
+                                                .ToImmutableArray()
+            ?? [];
         var allowedMissing = context.ParseResult.GetValueForOption(_ignoreMissingOption)
                                                 ?.Where(val => !string.IsNullOrWhiteSpace(val))
-                                                .Select(DotNet.Globbing.Glob.Parse)
-                                                .ToHashSet()
+                                                .Distinct()
+                                                .Select(Glob.Parse)
+                                                .ToImmutableArray()
             ?? [];
         var dryRun = context.ParseResult.GetValueForOption(_dryRunOption);
 
@@ -145,7 +161,7 @@ internal sealed class AutoCommand
             return;
         }
 
-        var dependencies = AutoPatchAssemblies(context.Console, recurse, rid, libraryPaths, assemblies, dryRun);
+        var dependencies = AutoPatchAssemblies(context.Console, recurse, rid, libraryPaths, assemblies, skipRewrite, dryRun);
         var missingDependencies = dependencies.Where(x => !x.Satisfied).ToImmutableArray();
 
         var failed = false;
@@ -189,6 +205,7 @@ internal sealed class AutoCommand
         string rid,
         ImmutableArray<FileSystemInfo> libraryPaths,
         ImmutableArray<FileInfo> assemblies,
+        ImmutableArray<Glob> skipRewrite,
         bool dryRun)
     {
         var dependencies = ImmutableArray.CreateBuilder<Dependency>();
@@ -218,7 +235,11 @@ internal sealed class AutoCommand
             var modified = false;
             foreach (var import in imports.DistinctBy(import => import.Library))
             {
-                if (import.Library.IndexOfAny(['/', '\\']) >= 0)
+                if (skipRewrite.Any(skip => skip.IsMatch(import.Library)))
+                {
+                    continue;
+                }
+                else if (import.Library.IndexOfAny(['/', '\\']) >= 0)
                 {
                     continue; // Dependency path is already absolute or relative.
                 }
