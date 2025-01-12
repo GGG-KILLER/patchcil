@@ -256,10 +256,18 @@ internal sealed class AutoCommand
                 }
                 else if (libraryCandidateMap.TryFind(rid, import.Library, out candidate))
                 {
-                    modified = true;
-                    import.Method.SetDllImportLibrary(candidate);
-                    console.WriteLine($"    {import.Library} -> found: {candidate}");
-                    dependencies.Add(new Dependency(assembly, import.Library, true));
+                    if (!NativeLibrary.IsLibrary(rid, candidate))
+                    {
+                        console.WriteLine($"    {import.Library} -> not a native library: {candidate}");
+                        dependencies.Add(new Dependency(assembly, import.Library, false));
+                    }
+                    else
+                    {
+                        modified = true;
+                        import.Method.SetDllImportLibrary(candidate);
+                        console.WriteLine($"    {import.Library} -> found: {candidate}");
+                        dependencies.Add(new Dependency(assembly, import.Library, true));
+                    }
                 }
                 else
                 {

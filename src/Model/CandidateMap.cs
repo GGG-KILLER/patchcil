@@ -20,11 +20,6 @@ internal sealed class CandidateMap(bool recurse)
 
     public bool TryFind(string rid, string name, [NotNullWhen(true)] out string? candidate)
     {
-        // Implemented based on https://github.com/dotnet/runtime/blob/v9.0.0/src/tests/Loader/AssemblyDependencyResolver/AssemblyDependencyResolverTests/NativeDependencyTests.cs
-        var isUnix = RuntimeIdentifiers.IsUnix(rid);
-        var isApple = RuntimeIdentifiers.IsApple(rid);
-        var isWindows = RuntimeIdentifiers.IsWindows(rid);
-
         foreach (var candidateLocation in _candidateLocations)
         {
             foreach (var variation in NativeLibrary.ListVariations(rid, name))
