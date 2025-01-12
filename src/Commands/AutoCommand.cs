@@ -88,6 +88,10 @@ internal sealed class AutoCommand
         var libraryPaths = context.ParseResult.GetValueForOption(_libraryPathsOption)!
                                               .Where(item => item.Exists)
                                               .ToImmutableArray();
+        var allowedMissing = context.ParseResult.GetValueForOption(_ignoreMissingOption)
+                                                ?.Where(val => !string.IsNullOrWhiteSpace(val))
+                                                .Select(DotNet.Globbing.Glob.Parse)
+                                                .ToHashSet()
             ?? [];
         var dryRun = context.ParseResult.GetValueForOption(_dryRunOption);
 
