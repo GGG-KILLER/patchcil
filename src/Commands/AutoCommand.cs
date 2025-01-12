@@ -54,8 +54,7 @@ internal sealed class AutoCommand
         {
             Arity = ArgumentArity.OneOrMore,
             AllowMultipleArgumentsPerToken = true,
-        }
-            .ExistingOnly();
+        };
 
         _ignoreMissingOption = new Option<IEnumerable<string>>(
             name: "--ignore-missing",
@@ -86,8 +85,9 @@ internal sealed class AutoCommand
         var recurse = !context.ParseResult.GetValueForOption(_noRecurseOption);
         var rid = context.ParseResult.GetValueForOption(_ridOption)!;
         var assemblyPaths = context.ParseResult.GetValueForOption(_pathsOption)!;
-        var libraryPaths = context.ParseResult.GetValueForOption(_libraryPathsOption)!.ToImmutableArray();
-        var allowedMissing = context.ParseResult.GetValueForOption(_ignoreMissingOption)?.Select(DotNet.Globbing.Glob.Parse).ToHashSet()
+        var libraryPaths = context.ParseResult.GetValueForOption(_libraryPathsOption)!
+                                              .Where(item => item.Exists)
+                                              .ToImmutableArray();
             ?? [];
         var dryRun = context.ParseResult.GetValueForOption(_dryRunOption);
 
