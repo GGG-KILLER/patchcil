@@ -201,8 +201,6 @@ internal sealed class AutoCommand
         foreach (var assembly in assemblies)
         {
             console.WriteLine($"searching for dependencies of {assembly}");
-            // Memory map as we don't know how large the assemblies we'll be opening are.
-            using var fileService = new MemoryMappedFileService();
 
             // TODO: Read information from .deps.json instead of using this hacky method.
             var runtimeFolders = RuntimeIdentifiers.EnumerateSelfAndDescendants(rid)
@@ -215,13 +213,10 @@ internal sealed class AutoCommand
             var runtimeCandidateMap = new CandidateMap(false, runtimeFolders);
 
             var assemblyDefinition = AssemblyDefinition.FromFile(
-                fileService.OpenFile(assembly.FullName),
+                assembly.FullName,
                 new ModuleReaderParameters(
                     assembly.Directory!.FullName,
-                    new PEReaderParameters(ThrowErrorListener.Instance)
-                    {
-                        FileService = fileService
-                    }));
+                    new PEReaderParameters(ThrowErrorListener.Instance)));
 
             var imports = AssemblyWalker.ListDllImports(assemblyDefinition);
             var modified = false;
