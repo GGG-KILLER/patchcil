@@ -44,7 +44,7 @@ internal sealed class CandidateMap(bool recurse)
             }
             else if (candidateLocation is DirectoryInfo directory)
             {
-                using var enumerator = Directory.EnumerateFiles(directory.FullName, name, new EnumerationOptions
+                using var enumerator = directory.EnumerateFiles(name, new EnumerationOptions
                 {
                     IgnoreInaccessible = true,
                     MatchCasing = MatchCasing.PlatformDefault,
@@ -54,7 +54,7 @@ internal sealed class CandidateMap(bool recurse)
 
                 if (enumerator.MoveNext())
                 {
-                    match = enumerator.Current;
+                    match = enumerator.Current.FullName;
                     return true;
                 }
             }

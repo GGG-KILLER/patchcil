@@ -14,8 +14,7 @@ internal static class NativeLibrary
         var isApple = RuntimeIdentifiers.IsApple(rid);
         var isWindows = RuntimeIdentifiers.IsWindows(rid);
 
-        // We only test for alternatives if the library name is not relative or absolute.
-        // And unix-like systems prefer the version with the extension, even if one without exists.
+        // Unix-like systems prefer the version with the extension, even if one without exists.
         if (isUnix)
         {
             if (isApple)
