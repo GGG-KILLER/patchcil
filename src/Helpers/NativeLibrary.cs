@@ -59,4 +59,20 @@ internal static class NativeLibrary
                 yield return "lib" + libraryName + ".so";
         }
     }
+
+    public static bool IsForAnotherRuntime(string rid, string libraryName)
+    {
+        if (RuntimeIdentifiers.IsApple(rid))
+        {
+            return Path.GetExtension(libraryName) is ".exe" or ".dll" or ".so" || libraryName.Contains(".so.");
+        }
+        else if (RuntimeIdentifiers.IsUnix(rid))
+        {
+            return Path.GetExtension(libraryName) is ".exe" or ".dll" or ".dylib";
+        }
+        else
+        {
+            return Path.GetExtension(libraryName) is ".so" or ".dylib" || libraryName.Contains(".so.");
+        }
+    }
 }
