@@ -215,6 +215,28 @@ internal sealed class AutoCommand
                 continue;
             }
 
+            bool modified = AutoPatchAssembly(console, rid, skipRewrite, dependencies, libraryCandidateMap, relativeCandidateMapCache, assembly, assemblyDefinition);
+
+            if (modified && !dryRun)
+            {
+                // Overwrite the contents of the file.
+                assemblyDefinition.Write(assembly.FullName);
+            }
+        }
+
+        return dependencies.DrainToImmutable();
+    }
+
+    private static bool AutoPatchAssembly(
+        IConsole console,
+        string rid,
+        ImmutableArray<Glob> skipRewrite,
+        ImmutableArray<Dependency>.Builder dependencies,
+        CandidateMap libraryCandidateMap,
+        ConditionalWeakTable<string, CandidateMap> relativeCandidateMapCache,
+        FileInfo assembly,
+        AssemblyDefinition assemblyDefinition)
+    {
             console.WriteLine($"searching for dependencies of {assembly}");
 
             var relativeCandidateMap = relativeCandidateMapCache.GetValue(
@@ -275,13 +297,6 @@ internal sealed class AutoCommand
                 }
             }
 
-            if (modified && !dryRun)
-            {
-                // Overwrite the contents of the file.
-                assemblyDefinition.Write(assembly.FullName);
-            }
-        }
-
-        return dependencies.DrainToImmutable();
+        return modified;
     }
 }
