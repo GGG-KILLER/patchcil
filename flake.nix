@@ -39,44 +39,103 @@
           default = self.packages.${system}.patchcil;
         }
         // lib.optionalAttrs pkgs.stdenvNoCC.hostPlatform.isLinux {
-          patchcil-avalonia-sample =
-            pkgs.runCommandNoCC "patchcil-avalonia-sample"
-              {
-                nativeBuildInputs = [ pkgs.makeBinaryWrapper ];
-                meta.mainProgram = "patchcil-avalonia-sample";
-              }
-              ''
-                mkdir -p $out/bin
-                makeWrapper ${lib.getExe self.packages.${system}.patchcil} $out/bin/patchcil-avalonia-sample \
-                  --add-flags auto \
-                  --add-flags "--runtime ${pkgs.dotnetCorePackages.systemToDotnetRid pkgs.stdenv.hostPlatform.system}" \
-                  --add-flags "--libs ${
-                    lib.concatStringsSep " " (
-                      map (pkg: "${(lib.getLib pkg)}/lib") (
-                        with pkgs;
-                        [
-                          glibc
-                          xorg.libX11
-                          xorg.libICE
-                          xorg.libSM
-                          xorg.libXrandr
-                          xorg.libXi
-                          xorg.libXcursor
-                          glib
-                          gtk3
-                          libGL
-                        ]
-                      )
-                    )
-                  }" \
-                  --add-flags "--ignore-missing c libc gdi32 kernel32 ntdll shell32 user32 Windows.UI.Composition winspool.drv libAvaloniaNative clr" \
-                  --add-flags "--paths ${
-                    pkgs.avalonia-ilspy.overrideAttrs (prev: {
-                      dontAutoPatchcil = true;
-                    })
-                  }" \
-                  --add-flags "--dry-run"
-              '';
+          patchcil-avalonia-sample = pkgs.writeShellScriptBin "patchcil-avalonia-sample" ''
+            set -xeuo pipefail
+
+            declare -a PATCHCIL_FLAGS
+            set_runtime=yes
+            set_libs=yes
+            set_ignored=yes
+            set_dry_run=yes
+
+            params=("$@")
+            length=''${#params[*]}
+            for ((n = 0; n < length; n += 1)); do
+              p="''${params[n]}"
+              case $p in
+                --no-runtime)
+                  set_runtime=no
+                ;;
+                -r|--runtime|--rid)
+                  set_runtime=no
+                  PATCHCIL_FLAGS+=("$p" "''${params[n + 1]}")
+                  n=$((n + 1))
+                ;;
+                -r*|--runtime=*|--rid=*)
+                  set_runtime=no
+                  PATCHCIL_FLAGS+=("$p")
+                ;;
+                --no-libs)
+                  set_libs=no
+                ;;
+                --no-ignores)
+                  set_ignored=no
+                ;;
+                --no-dry-run)
+                  set_dry_run=no
+                ;;
+                *) # Using an error macro, we will make sure the compiler gives an understandable error message
+                  PATCHCIL_FLAGS+=("$p")
+                ;;
+              esac
+            done
+
+            if [[ "$set_runtime" == "yes" ]]; then
+              PATCHCIL_FLAGS+=("--runtime" "${pkgs.dotnetCorePackages.systemToDotnetRid pkgs.stdenv.hostPlatform.system}")
+            fi
+
+            if [[ "$set_libs" == "yes" ]]; then
+              PATCHCIL_FLAGS+=("--libs" ${
+                lib.escapeShellArgs (
+                  map (pkg: "${(lib.getLib pkg)}/lib") (
+                    with pkgs;
+                    [
+                      glibc
+                      xorg.libX11
+                      xorg.libICE
+                      xorg.libSM
+                      xorg.libXrandr
+                      xorg.libXi
+                      xorg.libXcursor
+                      glib
+                      gtk3
+                      libGL
+                    ]
+                  )
+                )
+              })
+            fi
+
+            if [[ "$set_ignored" == "yes" ]]; then
+              PATCHCIL_FLAGS+=( \
+                "--ignore-missing" \
+                "c" \
+                "libc" \
+                "gdi32" \
+                "kernel32" \
+                "ntdll" \
+                "shell32" \
+                "user32" \
+                "Windows.UI.Composition" \
+                "winspool.drv" \
+                "libAvaloniaNative" \
+                "clr" \
+              )
+            fi
+
+            PATCHCIL_FLAGS+=("--paths" "${
+              pkgs.avalonia-ilspy.overrideAttrs (prev: {
+                dontAutoPatchcil = true;
+              })
+            }")
+
+            if [[ "$set_dry_run" == "yes" ]]; then
+              PATCHCIL_FLAGS+=("--dry-run")
+            fi
+
+            set -x
+            exec ${lib.getExe self.packages.${system}.patchcil} auto "''${PATCHCIL_FLAGS[@]}"
+          '';
         }
       );
     };
