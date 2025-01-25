@@ -179,6 +179,22 @@ internal sealed class AutoCommand
             context.Console.Error.WriteLine("patchcil-auto failed to find all the required dependencies.");
             context.Console.Error.WriteLine("Add the missing dependencies to --libs or use `--ignore-missing foo.so.1 bar.so etc.so`.");
             context.Console.Error.WriteLine($"error: missing libraries: {string.Join(", ", actuallyMissing)}");
+            if (!RuntimeIdentifiers.IsWindows(rid)
+               && actuallyMissing.Any(NativeLibrary.IsKnownWindowsLibraryName))
+            {
+                context.Console.Error.WriteLine($"note: following libraries seem to be windows-only and **may** not be required: {string.Join(
+                    ", ",
+                    actuallyMissing.Where(NativeLibrary.IsKnownWindowsLibraryName)
+                )}");
+            }
+            if ((!RuntimeIdentifiers.IsUnix(rid) || RuntimeIdentifiers.IsApple(rid))
+                && actuallyMissing.Any(NativeLibrary.IsKnownUnixLibraryName))
+            {
+                context.Console.Error.WriteLine($"note: following libraries seem to be unix-only and **may** not be required: {string.Join(
+                    ", ",
+                    actuallyMissing.Where(NativeLibrary.IsKnownUnixLibraryName)
+                )}");
+            }
             context.ExitCode = ExitCodes.MissingDependencies;
             return;
         }
@@ -237,65 +253,65 @@ internal sealed class AutoCommand
         FileInfo assembly,
         AssemblyDefinition assemblyDefinition)
     {
-            console.WriteLine($"searching for dependencies of {assembly}");
+        console.WriteLine($"searching for dependencies of {assembly}");
 
-            var relativeCandidateMap = relativeCandidateMapCache.GetValue(
-                assembly.Directory!.FullName,
-                path =>
-                {
-                    // TODO: Read information from .deps.json instead of using this hacky method.
-                    var relativeFolders = RuntimeIdentifiers.EnumerateSelfAndDescendants(rid)
-                        .Select(rid => Path.Combine(path, "runtimes", rid, "native"))
-                        .Where(Directory.Exists)
-                        .Select(path => new DirectoryInfo(path))
-                        // But keep this one because it always checks relative paths.
-                        .Prepend(new DirectoryInfo(path));
-
-                    return new CandidateMap(false, relativeFolders);
-                });
-
-            var imports = AssemblyWalker.ListDllImports(assemblyDefinition);
-            var modified = false;
-            foreach (var group in imports.GroupBy(import => import.Library))
+        var relativeCandidateMap = relativeCandidateMapCache.GetValue(
+            assembly.Directory!.FullName,
+            path =>
             {
-                if (skipRewrite.Any(skip => skip.IsMatch(group.Key)))
+                // TODO: Read information from .deps.json instead of using this hacky method.
+                var relativeFolders = RuntimeIdentifiers.EnumerateSelfAndDescendants(rid)
+                    .Select(rid => Path.Combine(path, "runtimes", rid, "native"))
+                    .Where(Directory.Exists)
+                    .Select(path => new DirectoryInfo(path))
+                    // But keep this one because it always checks relative paths.
+                    .Prepend(new DirectoryInfo(path));
+
+                return new CandidateMap(false, relativeFolders);
+            });
+
+        var imports = AssemblyWalker.ListDllImports(assemblyDefinition);
+        var modified = false;
+        foreach (var group in imports.GroupBy(import => import.Library))
+        {
+            if (skipRewrite.Any(skip => skip.IsMatch(group.Key)))
+            {
+                continue;
+            }
+            else if (group.Key.IndexOfAny(['/', '\\']) >= 0)
+            {
+                continue; // Dependency path is already absolute or relative.
+            }
+            // Libraries in same directory as the assembly or runtime/ are like $ORIGIN in ELF RPATHs.
+            else if (relativeCandidateMap.TryFind(rid, group.Key, out var candidate))
+            {
+                console.WriteLine($"    {group.Key} [x{group.Count()}] -> found: {Path.GetRelativePath(assembly.Directory.FullName, candidate)}");
+                dependencies.Add(new Dependency(assembly, group.Key, true));
+            }
+            else if (libraryCandidateMap.TryFind(rid, group.Key, out candidate))
+            {
+                if (!NativeLibrary.IsLibrary(rid, candidate))
                 {
-                    continue;
-                }
-                else if (group.Key.IndexOfAny(['/', '\\']) >= 0)
-                {
-                    continue; // Dependency path is already absolute or relative.
-                }
-                // Libraries in same directory as the assembly or runtime/ are like $ORIGIN in ELF RPATHs.
-                else if (relativeCandidateMap.TryFind(rid, group.Key, out var candidate))
-                {
-                    console.WriteLine($"    {group.Key} [x{group.Count()}] -> found: {Path.GetRelativePath(assembly.Directory.FullName, candidate)}");
-                    dependencies.Add(new Dependency(assembly, group.Key, true));
-                }
-                else if (libraryCandidateMap.TryFind(rid, group.Key, out candidate))
-                {
-                    if (!NativeLibrary.IsLibrary(rid, candidate))
-                    {
-                        console.WriteLine($"    {group.Key} [x{group.Count()}] -> not a native library: {candidate}");
-                        dependencies.Add(new Dependency(assembly, group.Key, false));
-                    }
-                    else
-                    {
-                        modified = true;
-                        foreach (var import in group)
-                        {
-                            import.Method.SetDllImportLibrary(candidate);
-                        }
-                        console.WriteLine($"    {group.Key} [x{group.Count()}] -> found: {candidate}");
-                        dependencies.Add(new Dependency(assembly, group.Key, true));
-                    }
+                    console.WriteLine($"    {group.Key} [x{group.Count()}] -> not a native library: {candidate}");
+                    dependencies.Add(new Dependency(assembly, group.Key, false));
                 }
                 else
                 {
-                    console.WriteLine($"    {group.Key} [x{group.Count()}] -> not found!");
-                    dependencies.Add(new Dependency(assembly, group.Key, false));
+                    modified = true;
+                    foreach (var import in group)
+                    {
+                        import.Method.SetDllImportLibrary(candidate);
+                    }
+                    console.WriteLine($"    {group.Key} [x{group.Count()}] -> found: {candidate}");
+                    dependencies.Add(new Dependency(assembly, group.Key, true));
                 }
             }
+            else
+            {
+                console.WriteLine($"    {group.Key} [x{group.Count()}] -> not found!");
+                dependencies.Add(new Dependency(assembly, group.Key, false));
+            }
+        }
 
         return modified;
     }
