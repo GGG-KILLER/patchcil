@@ -221,10 +221,10 @@ internal sealed class AutoCommand
                 assembly.Directory!.FullName,
                 path =>
                 {
-            // TODO: Read information from .deps.json instead of using this hacky method.
+                    // TODO: Read information from .deps.json instead of using this hacky method.
                     var relativeFolders = RuntimeIdentifiers.EnumerateSelfAndDescendants(rid)
                         .Select(rid => Path.Combine(path, "runtimes", rid, "native"))
-                .Where(Directory.Exists)
+                        .Where(Directory.Exists)
                         .Select(path => new DirectoryInfo(path))
                         // But keep this one because it always checks relative paths.
                         .Prepend(new DirectoryInfo(path));
@@ -234,41 +234,44 @@ internal sealed class AutoCommand
 
             var imports = AssemblyWalker.ListDllImports(assemblyDefinition);
             var modified = false;
-            foreach (var import in imports.DistinctBy(import => import.Library))
+            foreach (var group in imports.GroupBy(import => import.Library))
             {
-                if (skipRewrite.Any(skip => skip.IsMatch(import.Library)))
+                if (skipRewrite.Any(skip => skip.IsMatch(group.Key)))
                 {
                     continue;
                 }
-                else if (import.Library.IndexOfAny(['/', '\\']) >= 0)
+                else if (group.Key.IndexOfAny(['/', '\\']) >= 0)
                 {
                     continue; // Dependency path is already absolute or relative.
                 }
                 // Libraries in same directory as the assembly or runtime/ are like $ORIGIN in ELF RPATHs.
-                else if (relativeCandidateMap.TryFind(rid, import.Library, out var candidate))
+                else if (relativeCandidateMap.TryFind(rid, group.Key, out var candidate))
                 {
-                    console.WriteLine($"    {import.Library} -> found: {Path.GetRelativePath(assembly.Directory.FullName, candidate)}");
-                    dependencies.Add(new Dependency(assembly, import.Library, true));
+                    console.WriteLine($"    {group.Key} -> found: {Path.GetRelativePath(assembly.Directory.FullName, candidate)}");
+                    dependencies.Add(new Dependency(assembly, group.Key, true));
                 }
-                else if (libraryCandidateMap.TryFind(rid, import.Library, out candidate))
+                else if (libraryCandidateMap.TryFind(rid, group.Key, out candidate))
                 {
                     if (!NativeLibrary.IsLibrary(rid, candidate))
                     {
-                        console.WriteLine($"    {import.Library} -> not a native library: {candidate}");
-                        dependencies.Add(new Dependency(assembly, import.Library, false));
+                        console.WriteLine($"    {group.Key} -> not a native library: {candidate}");
+                        dependencies.Add(new Dependency(assembly, group.Key, false));
                     }
                     else
                     {
                         modified = true;
-                        import.Method.SetDllImportLibrary(candidate);
-                        console.WriteLine($"    {import.Library} -> found: {candidate}");
-                        dependencies.Add(new Dependency(assembly, import.Library, true));
+                        foreach (var import in group)
+                        {
+                            import.Method.SetDllImportLibrary(candidate);
+                        }
+                        console.WriteLine($"    {group.Key} -> found: {candidate}");
+                        dependencies.Add(new Dependency(assembly, group.Key, true));
                     }
                 }
                 else
                 {
-                    console.WriteLine($"    {import.Library} -> not found!");
-                    dependencies.Add(new Dependency(assembly, import.Library, false));
+                    console.WriteLine($"    {group.Key} -> not found!");
+                    dependencies.Add(new Dependency(assembly, group.Key, false));
                 }
             }
 
