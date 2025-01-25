@@ -64,19 +64,45 @@ internal static class NativeLibrary
         }
     }
 
+    public static ReadOnlySpan<char> GetExtension(ReadOnlySpan<char> path)
+    {
+        var name = Path.GetFileName(path);
+
+        if (name.IndexOf(".so.", StringComparison.Ordinal) is > 0 and int extStart)
+            return name[extStart..];
+        else if (name.EndsWith(".so", StringComparison.Ordinal))
+            return ".so";
+        else if (name.EndsWith(".dll", StringComparison.Ordinal))
+            return ".dll";
+        else if (name.EndsWith(".exe", StringComparison.Ordinal))
+            return ".exe";
+        else if (name.EndsWith(".dylib", StringComparison.Ordinal))
+            return ".dylib";
+        else
+            return "";
+    }
+
     public static bool IsForAnotherRuntime(string rid, string libraryName)
     {
+        var extension = GetExtension(libraryName);
+
+        // We cannot reliably determine whether a library is meant for another
+        // runtime if it has no extension.
+        if (extension.Length < 1)
+            return false;
+
         if (RuntimeIdentifiers.IsApple(rid))
         {
-            return Path.GetExtension(libraryName) is ".exe" or ".dll" or ".so" || libraryName.Contains(".so.");
+            return !extension.Equals(".dylib", StringComparison.Ordinal);
         }
         else if (RuntimeIdentifiers.IsUnix(rid))
         {
-            return Path.GetExtension(libraryName) is ".exe" or ".dll" or ".dylib";
+            return !extension.StartsWith(".so", StringComparison.Ordinal);
         }
         else
         {
-            return Path.GetExtension(libraryName) is ".so" or ".dylib" || libraryName.Contains(".so.");
+            return !extension.Equals(".dll", StringComparison.Ordinal)
+                && !extension.Equals(".exe", StringComparison.Ordinal);
         }
     }
 
