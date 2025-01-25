@@ -40,7 +40,7 @@
         }
         // lib.optionalAttrs pkgs.stdenvNoCC.hostPlatform.isLinux {
           patchcil-avalonia-sample = pkgs.writeShellScriptBin "patchcil-avalonia-sample" ''
-            set -xeuo pipefail
+            set -euo pipefail
 
             declare -a PATCHCIL_FLAGS
             set_runtime=yes

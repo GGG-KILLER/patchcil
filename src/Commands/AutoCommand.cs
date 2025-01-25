@@ -220,10 +220,11 @@ internal sealed class AutoCommand
             AssemblyDefinition assemblyDefinition;
             try
             {
-                assemblyDefinition = AssemblyDefinition.FromFile(
-                assembly.FullName,
+                var bytes = File.ReadAllBytes(assembly.FullName);
+                assemblyDefinition = AssemblyDefinition.FromBytes(
+                bytes,
                 new ModuleReaderParameters(
-                    assembly.Directory!.FullName,
+                    null,
                     new PEReaderParameters(ThrowErrorListener.Instance)));
             }
             catch (BadImageFormatException)

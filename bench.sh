@@ -4,6 +4,7 @@
 set -euo pipefail
 
 hyperfine \
+    --shell=none \
     --warmup 5 \
     --runs 50 \
     "$(nix build --no-link --print-out-paths .#patchcil-avalonia-sample)/bin/patchcil-avalonia-sample" \
