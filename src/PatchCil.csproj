@@ -28,6 +28,13 @@
     <MetricsSupport>false</MetricsSupport>
     <UseNativeHttpHandler>true</UseNativeHttpHandler>
     <XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
+    <EnableGeneratedComInterfaceComImportInterop>false</EnableGeneratedComInterfaceComImportInterop>
+    <_ComObjectDescriptorSupport>false</_ComObjectDescriptorSupport>
+    <_DataSetXmlSerializationSupport>false</_DataSetXmlSerializationSupport>
+    <_DefaultValueAttributeSupport>false</_DefaultValueAttributeSupport>
+    <_DesignerHostSupport>false</_DesignerHostSupport>
+    <_EnableConsumingManagedCodeFromNativeHosting>false</_EnableConsumingManagedCodeFromNativeHosting>
+    <_UseManagedNtlm>false</_UseManagedNtlm>
   </PropertyGroup>
 
   <PropertyGroup>
