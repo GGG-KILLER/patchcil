@@ -247,14 +247,14 @@ internal sealed class AutoCommand
                 // Libraries in same directory as the assembly or runtime/ are like $ORIGIN in ELF RPATHs.
                 else if (relativeCandidateMap.TryFind(rid, group.Key, out var candidate))
                 {
-                    console.WriteLine($"    {group.Key} -> found: {Path.GetRelativePath(assembly.Directory.FullName, candidate)}");
+                    console.WriteLine($"    {group.Key} [x{group.Count()}] -> found: {Path.GetRelativePath(assembly.Directory.FullName, candidate)}");
                     dependencies.Add(new Dependency(assembly, group.Key, true));
                 }
                 else if (libraryCandidateMap.TryFind(rid, group.Key, out candidate))
                 {
                     if (!NativeLibrary.IsLibrary(rid, candidate))
                     {
-                        console.WriteLine($"    {group.Key} -> not a native library: {candidate}");
+                        console.WriteLine($"    {group.Key} [x{group.Count()}] -> not a native library: {candidate}");
                         dependencies.Add(new Dependency(assembly, group.Key, false));
                     }
                     else
@@ -264,13 +264,13 @@ internal sealed class AutoCommand
                         {
                             import.Method.SetDllImportLibrary(candidate);
                         }
-                        console.WriteLine($"    {group.Key} -> found: {candidate}");
+                        console.WriteLine($"    {group.Key} [x{group.Count()}] -> found: {candidate}");
                         dependencies.Add(new Dependency(assembly, group.Key, true));
                     }
                 }
                 else
                 {
-                    console.WriteLine($"    {group.Key} -> not found!");
+                    console.WriteLine($"    {group.Key} [x{group.Count()}] -> not found!");
                     dependencies.Add(new Dependency(assembly, group.Key, false));
                 }
             }
