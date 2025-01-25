@@ -139,20 +139,6 @@ internal sealed class AutoCommand
 
                 throw new Exception("Unreacheable code path reached.");
             })
-            .Where(x =>
-            {
-                try
-                {
-                    AssemblyDefinition.FromFile(x.FullName, new ModuleReaderParameters(
-                        x.Directory!.FullName,
-                        new PEReaderParameters(ThrowErrorListener.Instance)));
-                    return true;
-                }
-                catch (BadImageFormatException)
-                {
-                    return false;
-                }
-            })
             .ToImmutableArray();
 
         if (assemblies.Length == 0)
@@ -213,6 +199,20 @@ internal sealed class AutoCommand
 
         foreach (var assembly in assemblies)
         {
+            AssemblyDefinition assemblyDefinition;
+            try
+            {
+                assemblyDefinition = AssemblyDefinition.FromFile(
+                assembly.FullName,
+                new ModuleReaderParameters(
+                    assembly.Directory!.FullName,
+                    new PEReaderParameters(ThrowErrorListener.Instance)));
+            }
+            catch (BadImageFormatException)
+            {
+                continue;
+            }
+
             console.WriteLine($"searching for dependencies of {assembly}");
 
             // TODO: Read information from .deps.json instead of using this hacky method.
@@ -224,12 +224,6 @@ internal sealed class AutoCommand
             // List all assembly-specific
             var assemblyCandidateMap = new CandidateMap(false, assembly.Directory!);
             var runtimeCandidateMap = new CandidateMap(false, runtimeFolders);
-
-            var assemblyDefinition = AssemblyDefinition.FromFile(
-                assembly.FullName,
-                new ModuleReaderParameters(
-                    assembly.Directory!.FullName,
-                    new PEReaderParameters(ThrowErrorListener.Instance)));
 
             var imports = AssemblyWalker.ListDllImports(assemblyDefinition);
             var modified = false;
