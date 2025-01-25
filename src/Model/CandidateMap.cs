@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using PatchCil.Helpers;
 
 namespace PatchCil.Model;
@@ -6,6 +7,7 @@ namespace PatchCil.Model;
 internal sealed class CandidateMap(bool recurse)
 {
     private readonly List<FileSystemInfo> _candidateLocations = [];
+    private readonly ConditionalWeakTable<string, string?> _candidateCache = [];
 
     public CandidateMap(bool recurse, params IEnumerable<FileSystemInfo> candidateLocations)
         : this(recurse)
@@ -20,17 +22,21 @@ internal sealed class CandidateMap(bool recurse)
 
     public bool TryFind(string rid, string name, [NotNullWhen(true)] out string? candidate)
     {
-        foreach (var candidateLocation in _candidateLocations)
+        candidate = _candidateCache.GetValue($"{rid}:{name}", key =>
         {
-            foreach (var variation in NativeLibrary.ListVariations(rid, name))
+            foreach (var candidateLocation in _candidateLocations)
             {
-                if (tryFindInCandidate(candidateLocation, variation, out candidate, recurse))
-                    return true;
+                foreach (var variation in NativeLibrary.ListVariations(rid, name))
+                {
+                    if (tryFindInCandidate(candidateLocation, variation, out var candidate, recurse))
+                        return candidate;
+                }
             }
-        }
 
-        candidate = null;
-        return false;
+            return null;
+        });
+
+        return candidate != null;
 
         static bool tryFindInCandidate(FileSystemInfo candidateLocation, string name, [NotNullWhen(true)] out string? match, bool recurse)
         {

@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.CommandLine.IO;
+using System.Runtime.CompilerServices;
 using AsmResolver;
 using AsmResolver.DotNet;
 using AsmResolver.DotNet.Serialized;
@@ -196,6 +197,7 @@ internal sealed class AutoCommand
     {
         var dependencies = ImmutableArray.CreateBuilder<Dependency>();
         var libraryCandidateMap = new CandidateMap(recurse, libraryPaths);
+        var relativeCandidateMapCache = new ConditionalWeakTable<string, CandidateMap>();
 
         foreach (var assembly in assemblies)
         {
@@ -215,15 +217,20 @@ internal sealed class AutoCommand
 
             console.WriteLine($"searching for dependencies of {assembly}");
 
+            var relativeCandidateMap = relativeCandidateMapCache.GetValue(
+                assembly.Directory!.FullName,
+                path =>
+                {
             // TODO: Read information from .deps.json instead of using this hacky method.
-            var runtimeFolders = RuntimeIdentifiers.EnumerateSelfAndDescendants(rid)
-                .Select(rid => Path.Combine(assembly.Directory!.Name, "runtimes", rid, "native"))
+                    var relativeFolders = RuntimeIdentifiers.EnumerateSelfAndDescendants(rid)
+                        .Select(rid => Path.Combine(path, "runtimes", rid, "native"))
                 .Where(Directory.Exists)
-                .Select(path => new DirectoryInfo(path));
+                        .Select(path => new DirectoryInfo(path))
+                        // But keep this one because it always checks relative paths.
+                        .Prepend(new DirectoryInfo(path));
 
-            // List all assembly-specific
-            var assemblyCandidateMap = new CandidateMap(false, assembly.Directory!);
-            var runtimeCandidateMap = new CandidateMap(false, runtimeFolders);
+                    return new CandidateMap(false, relativeFolders);
+                });
 
             var imports = AssemblyWalker.ListDllImports(assemblyDefinition);
             var modified = false;
@@ -238,12 +245,7 @@ internal sealed class AutoCommand
                     continue; // Dependency path is already absolute or relative.
                 }
                 // Libraries in same directory as the assembly or runtime/ are like $ORIGIN in ELF RPATHs.
-                else if (assemblyCandidateMap.TryFind(rid, import.Library, out var candidate))
-                {
-                    console.WriteLine($"    {import.Library} -> found: {Path.GetRelativePath(assembly.Directory.FullName, candidate)}");
-                    dependencies.Add(new Dependency(assembly, import.Library, true));
-                }
-                else if (runtimeCandidateMap.TryFind(rid, import.Library, out candidate))
+                else if (relativeCandidateMap.TryFind(rid, import.Library, out var candidate))
                 {
                     console.WriteLine($"    {import.Library} -> found: {Path.GetRelativePath(assembly.Directory.FullName, candidate)}");
                     dependencies.Add(new Dependency(assembly, import.Library, true));
