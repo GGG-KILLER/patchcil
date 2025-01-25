@@ -11,6 +11,26 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <!-- Publish with AOT for faster cold-start (as that's pretty much the only use case) -->
+    <PublishAot>true</PublishAot>
+    <!-- Optimize for size since we don't need throughput -->
+    <OptimizationPreference>Size</OptimizationPreference>
+
+    <!-- Only use Invariant globalization for smaller binary size -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!-- Remove unused features -->
+    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+    <EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
+    <EventSourceSupport>false</EventSourceSupport>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+    <MetricsSupport>false</MetricsSupport>
+    <UseNativeHttpHandler>true</UseNativeHttpHandler>
+    <XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <!-- Enable output of generated files back into our Generated directory -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
