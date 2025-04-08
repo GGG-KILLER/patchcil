@@ -15,7 +15,7 @@ using PatchCil.Commands;
 namespace PatchCil.Benchmarks;
 
 [Config(typeof(Config))]
-public class AutoPatchcilBenchmark
+public sealed class AutoPatchcilBenchmark
 {
     private ParseResult? _parseResult;
 
@@ -36,7 +36,7 @@ public class AutoPatchcilBenchmark
             "--libs", ..libraryPaths,
             "--ignore-missing", "c", "libc", "gdi32", "kernel32", "ntdll", "shell32", "user32", "Windows.UI.Composition", "winspool.drv", "libAvaloniaNative", "clr",
             "--paths", avaloniaIlspyPath,
-            "--dry-run"
+            "--dry-run",
         ]);
     }
 
@@ -51,35 +51,35 @@ public class AutoPatchcilBenchmark
     /// <summary>
     /// Provides access to in-memory standard streams that are not attached to <see cref="System.Console"/>.
     /// </summary>
-    public class NullConsole : IConsole
+    internal sealed class NullConsole : IConsole
     {
         public static readonly NullConsole Instance = new();
 
         /// <summary>
         /// Initializes a new instance of <see cref="TestConsole"/>.
         /// </summary>
-        public NullConsole()
+        private NullConsole()
         {
             Out = new NullStreamWriter();
             Error = new NullStreamWriter();
         }
 
         /// <inheritdoc />
-        public IStandardStreamWriter Error { get; protected set; }
+        public IStandardStreamWriter Error { get; }
 
         /// <inheritdoc />
-        public IStandardStreamWriter Out { get; protected set; }
+        public IStandardStreamWriter Out { get; }
 
         /// <inheritdoc />
-        public bool IsOutputRedirected { get; protected set; }
+        public bool IsOutputRedirected => true;
 
         /// <inheritdoc />
-        public bool IsErrorRedirected { get; protected set; }
+        public bool IsErrorRedirected => true;
 
         /// <inheritdoc />
-        public bool IsInputRedirected { get; protected set; }
+        public bool IsInputRedirected => true;
 
-        internal class NullStreamWriter : TextWriter, IStandardStreamWriter
+        private sealed class NullStreamWriter : TextWriter, IStandardStreamWriter
         {
             public override void Write(char value) { }
 
@@ -102,7 +102,7 @@ public class AutoPatchcilBenchmark
                 new EnvironmentVariable("BENCH_AVALONIA_ILSPY_PATH", GetAvaloniaIlspyPath()),
             ]));
 
-            AddDiagnoser(new EventPipeProfiler(EventPipeProfile.CpuSampling, performExtraBenchmarksRun: false));
+            AddDiagnoser(new EventPipeProfiler(performExtraBenchmarksRun: false));
 
             AddColumn(
                 StatisticColumn.Min,
@@ -128,11 +128,11 @@ public class AutoPatchcilBenchmark
             var libraryPaths = Array.ConvertAll(
                 librariesBuilder.StandardOutput.ReadToEnd()
                     .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
-                path => Path.Combine(path, "lib"));
+                static path => Path.Combine(path, "lib"));
             librariesBuilder.WaitForExit();
 
             if (librariesBuilder.ExitCode != 0)
-                throw new InvalidOperationException("nix build for libraries had a nonn-zero exit code.");
+                throw new InvalidOperationException("nix build for libraries had a non-zero exit code.");
             return libraryPaths;
         }
 
@@ -151,7 +151,7 @@ public class AutoPatchcilBenchmark
             avaloniaIlspyBuilder.WaitForExit();
 
             if (avaloniaIlspyBuilder.ExitCode != 0)
-                throw new InvalidOperationException("nix build for avalonia-ilspy had a nonn-zero exit code.");
+                throw new InvalidOperationException("nix build for avalonia-ilspy had a non-zero exit code.");
             return avaloniaIlspyPath;
         }
     }
