@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -19,25 +20,19 @@ if (!File.Exists(args[0]))
 }
 
 RuntimeGraph graph;
-using (var stream = File.OpenRead(args[0]))
+await using (var stream = File.OpenRead(args[0]))
     graph = await JsonSerializer.DeserializeAsync<RuntimeGraph>(stream)
         ?? throw new InvalidOperationException("Invalid portable RID graph file.");
 
-var map = graph.Runtimes.Keys.Where(x => x is not ("base" or "any"))
-    .ToImmutableDictionary(rid => rid, rid =>
+var map = graph.Runtimes.Keys.Where(static x => x is not ("base" or "any"))
+    .ToImmutableDictionary(static rid => rid, rid =>
     {
         var added = new HashSet<string>([rid, "base"]);
         var list = new List<string>([rid]);
         for (var idx = 0; idx < list.Count; idx++)
         {
             var currentRid = list[idx];
-            foreach (var import in graph.Runtimes[currentRid].Import)
-            {
-                if (added.Add(import))
-                {
-                    list.Add(import);
-                }
-            }
+            list.AddRange(graph.Runtimes[currentRid].Import.Where(import => added.Add(import)));
         }
         return list.ToImmutableArray();
     }, StringComparer.Ordinal);
@@ -46,7 +41,7 @@ var map = graph.Runtimes.Keys.Where(x => x is not ("base" or "any"))
 graph.Runtimes.Remove("any");
 graph.Runtimes.Remove("base");
 
-using var writer = File.CreateText(args[1]);
+await using var writer = File.CreateText(args[1]);
 
 await writer.WriteLineAsync($$"""
 //------------------------------------------------------------------------------
@@ -140,14 +135,13 @@ await writer.WriteLineAsync("""
 
 return 0;
 
-file class RuntimeGraph
-{
-    [JsonPropertyName("runtimes")]
-    public required Dictionary<string, Runtime> Runtimes { get; set; }
-}
+file sealed record RuntimeGraph(
+    [property: JsonRequired, JsonPropertyName("runtimes")]
+    Dictionary<string, Runtime> Runtimes
+);
 
-file class Runtime
-{
-    [JsonPropertyName("#import")]
-    public required List<string> Import { get; set; }
-}
+[SuppressMessage("ReSharper", "ClassNeverInstantiated.Local", Justification = "Implicitly used.")]
+file sealed record Runtime(
+    [property: JsonRequired, JsonPropertyName("#import")]
+    List<string> Import
+);
