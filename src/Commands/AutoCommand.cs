@@ -31,7 +31,7 @@ internal sealed class AutoCommand
             name: "--no-recurse",
             description: "Disable the recursive traversal of paths to patch.")
         {
-            Arity = ArgumentArity.ZeroOrOne
+            Arity = ArgumentArity.ZeroOrOne,
         };
 
         _ridOption = new Option<string>(
@@ -96,16 +96,16 @@ internal sealed class AutoCommand
         var rid = context.ParseResult.GetValueForOption(_ridOption)!;
         var assemblyPaths = context.ParseResult.GetValueForOption(_pathsOption)!;
         var libraryPaths = context.ParseResult.GetValueForOption(_libraryPathsOption)!
-                                              .Where(item => item.Exists)
+                                              .Where(static item => item.Exists)
                                               .ToImmutableArray();
         var skipRewrite = context.ParseResult.GetValueForOption(_skipRewrite)
-                                                ?.Where(val => !string.IsNullOrWhiteSpace(val))
+                                                ?.Where(static val => !string.IsNullOrWhiteSpace(val))
                                                 .Distinct()
                                                 .Select(Glob.Parse)
                                                 .ToImmutableArray()
             ?? [];
         var allowedMissing = context.ParseResult.GetValueForOption(_ignoreMissingOption)
-                                                ?.Where(val => !string.IsNullOrWhiteSpace(val))
+                                                ?.Where(static val => !string.IsNullOrWhiteSpace(val))
                                                 .Distinct()
                                                 .Select(Glob.Parse)
                                                 .ToImmutableArray()
@@ -122,23 +122,22 @@ internal sealed class AutoCommand
         var assemblies = assemblyPaths
             .SelectMany(path =>
             {
-                if (path is FileInfo file)
+                return path switch
                 {
-                    return [file];
-                }
-                else if (path is DirectoryInfo directory)
-                {
-                    return directory.EnumerateFiles("*.dll", new EnumerationOptions
-                    {
-                        IgnoreInaccessible = true,
-                        MatchType = MatchType.Simple,
-                        MatchCasing = MatchCasing.PlatformDefault,
-                        RecurseSubdirectories = recurse,
-                        AttributesToSkip = FileAttributes.System | FileAttributes.ReparsePoint, // Skip symlinks and system files
-                    });
-                }
-
-                throw new Exception("Unreacheable code path reached.");
+                    FileInfo file => [file],
+                    DirectoryInfo directory => directory.EnumerateFiles(
+                        "*.dll",
+                        new EnumerationOptions
+                        {
+                            IgnoreInaccessible    = true,
+                            MatchType             = MatchType.Simple,
+                            MatchCasing           = MatchCasing.PlatformDefault,
+                            RecurseSubdirectories = recurse,
+                            AttributesToSkip =
+                                FileAttributes.System | FileAttributes.ReparsePoint, // Skip symlinks and system files
+                        }),
+                    _ => throw new Exception("Unreachable code path reached."),
+                };
             })
             .ToImmutableArray();
 
@@ -149,7 +148,7 @@ internal sealed class AutoCommand
         }
 
         var dependencies = AutoPatchAssemblies(context.Console, recurse, rid, libraryPaths, assemblies, skipRewrite, dryRun);
-        var missingDependencies = dependencies.Where(x => !x.Satisfied).ToImmutableArray();
+        var missingDependencies = dependencies.Where(static x => !x.Satisfied).ToImmutableArray();
 
         var failed = false;
         var actuallyMissing = new HashSet<string>(StringComparer.Ordinal);
@@ -160,7 +159,7 @@ internal sealed class AutoCommand
             {
                 context.Console.WriteLine($"warn: patchcil-auto ignoring missing {missing.LibraryName} wanted by {missing.Assembly} (allowed by user to be missing)");
             }
-            // If the library has an extension and it is not the extension for libraries for a given RID,
+            // If the library has an extension, and it is not the extension for libraries for a given RID,
             // then we can ignore them since we won't be using them.
             else if (NativeLibrary.IsForAnotherRuntime(rid, missing.LibraryName))
             {
@@ -202,7 +201,7 @@ internal sealed class AutoCommand
         context.ExitCode = ExitCodes.Ok;
     }
 
-    public static ImmutableArray<Dependency> AutoPatchAssemblies(
+    private static ImmutableArray<Dependency> AutoPatchAssemblies(
         IConsole console,
         bool recurse,
         string rid,
@@ -264,7 +263,7 @@ internal sealed class AutoCommand
                 var relativeFolders = RuntimeIdentifiers.EnumerateSelfAndDescendants(rid)
                     .Select(rid => Path.Combine(path, "runtimes", rid, "native"))
                     .Where(Directory.Exists)
-                    .Select(path => new DirectoryInfo(path))
+                    .Select(static path => new DirectoryInfo(path))
                     // But keep this one because it always checks relative paths.
                     .Prepend(new DirectoryInfo(path));
 
@@ -273,18 +272,13 @@ internal sealed class AutoCommand
 
         var imports = AssemblyWalker.ListDllImports(assemblyDefinition);
         var modified = false;
-        foreach (var group in imports.GroupBy(import => import.Library))
+        foreach (var group in imports.GroupBy(static import => import.Library))
         {
-            if (skipRewrite.Any(skip => skip.IsMatch(group.Key)))
-            {
-                continue;
-            }
-            else if (group.Key.IndexOfAny(['/', '\\']) >= 0)
-            {
-                continue; // Dependency path is already absolute or relative.
-            }
+            if (skipRewrite.Any(skip => skip.IsMatch(group.Key))) continue;
+            if (group.Key.IndexOfAny(['/', '\\']) >= 0) continue; // Dependency path is already absolute or relative.
+
             // Libraries in same directory as the assembly or runtime/ are like $ORIGIN in ELF RPATHs.
-            else if (relativeCandidateMap.TryFind(rid, group.Key, out var candidate))
+            if (relativeCandidateMap.TryFind(rid, group.Key, out var candidate))
             {
                 console.WriteLine($"    {group.Key} [x{group.Count()}] -> found: {Path.GetRelativePath(assembly.Directory.FullName, candidate)}");
                 dependencies.Add(new Dependency(assembly, group.Key, true));
@@ -299,10 +293,7 @@ internal sealed class AutoCommand
                 else
                 {
                     modified = true;
-                    foreach (var import in group)
-                    {
-                        import.Method.SetDllImportLibrary(candidate);
-                    }
+                    foreach (var import in group) import.Method.SetDllImportLibrary(candidate);
                     console.WriteLine($"    {group.Key} [x{group.Count()}] -> found: {candidate}");
                     dependencies.Add(new Dependency(assembly, group.Key, true));
                 }

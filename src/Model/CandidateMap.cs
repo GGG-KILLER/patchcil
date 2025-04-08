@@ -22,7 +22,7 @@ internal sealed class CandidateMap(bool recurse)
 
     public bool TryFind(string rid, string name, [NotNullWhen(true)] out string? candidate)
     {
-        candidate = _candidateCache.GetValue($"{rid}:{name}", key =>
+        candidate = _candidateCache.GetValue($"{rid}:{name}", _ =>
         {
             foreach (var candidateLocation in _candidateLocations)
             {
